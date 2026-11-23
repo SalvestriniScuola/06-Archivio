@@ -3,12 +3,14 @@ package dev.lieno;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Map;
 
 public class ClientHandler implements Runnable {
@@ -91,21 +93,17 @@ public class ClientHandler implements Runnable {
 
     private String readFile(String fileName) {
 
-        System.err.println(fileName);
         String[] fileNameParts = fileName.split("\\.");
-
-        System.err.println(fileNameParts.length);
         
         File file = new File(fileFolder, fileName);
-
-
-        String result = "OK FILE \nContent-Type: " + allowedExtentions.get(fileNameParts[fileNameParts.length - 1]) + "\n\n";
+        String result =  "";
 
         try (
             BufferedReader fileReader = new BufferedReader(new FileReader(file));
         ) {
+            byte[] dati = Files.readAllBytes(file.toPath());
             String line = fileReader.readLine();
-            
+            result = "OK FILE \nContent-Type: " + allowedExtentions.get(fileNameParts[fileNameParts.length - 1]) + "\nContent-Length: " + dati.length +  "\n\n";
 
             while (line != null) {
                 result += line + "\n";
