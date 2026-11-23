@@ -25,10 +25,40 @@ public class ClientHandler implements Runnable {
         try (
             Socket socket = this.socket;
             BufferedReader socketIn = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-            PrintWriter socketOut = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
+            PrintWriter socketOut = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
         ) {
+            
+            while (socket != null) {
+                String input = socketIn.readLine();
+                
+                if(input == null)
+                    continue;
+                
+                input.trim();
 
-            socketOut.println(readFile(socketIn.readLine()));
+                if(input.split(" ").length < 2) {
+                    if(input.equals("QUIT"))
+                        socket.close();
+                    else
+                        socketOut.println("ERR SYNTAX");
+                    socketOut.flush();
+                } else {
+
+                    switch (input.split(" ")[0]) {
+                        case "LEGGI":
+                            
+                            socketOut.println(readFile(input.split(" ")[1]));
+                            
+                            break;
+                    
+                        default:
+
+                            socketOut.println("ERR UNKNOWNCMD");
+                            break;
+                    }
+                }
+            }
+
 
         } catch (IOException e ) {
             e.printStackTrace();
@@ -39,11 +69,14 @@ public class ClientHandler implements Runnable {
     private String readFile(String fileName) {
         File file = new File(fileFolder, fileName);
 
+        if(!file.exists())
+            return "ERR NOTFOUND";
+
         try (
             BufferedReader fileReader = new BufferedReader(new FileReader(file));
         ) {
             String line = fileReader.readLine();
-            String result = "";
+            String result = "OK FILE\n\n";
 
             while (line != null) {
                 result += line + "\n";
@@ -56,7 +89,7 @@ public class ClientHandler implements Runnable {
             e.printStackTrace();
         }
 
-        return "err";
+        return "ERR HOW DID WE GET HERE?";
 
     }
 }

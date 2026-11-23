@@ -8,7 +8,7 @@ import java.net.Socket;
 public class Main {
 
     private static final int SERVER_PORT = 3000;
-    private static final File fileFolder = new File("documenti");
+    private static final File FILE_FOLDER = new File("documenti");
 
     public static void main(String[] args) {
 
@@ -16,7 +16,7 @@ public class Main {
             
             while(true) {
                 Socket clientSocket = serverSocket.accept();
-                new Thread(new ClientHandler(clientSocket, fileFolder), "client-" + clientSocket.getRemoteSocketAddress()).start();
+                new Thread(new ClientHandler(clientSocket, FILE_FOLDER), "client-" + clientSocket.getRemoteSocketAddress()).start();
             }
 
         } catch(IOException e) {
