@@ -9,15 +9,18 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 public class ClientHandler implements Runnable {
 
     private final Socket socket;
     private final File fileFolder;
+    private final Map<String, String> allowedExtentions;
 
-    public ClientHandler(Socket clientSocket, File fileFolder) {
+    public ClientHandler(Socket clientSocket, String fileFolder, Map<String, String> allowedExtentions) {
         this.socket = clientSocket;
-        this.fileFolder = fileFolder;
+        this.fileFolder = new File(fileFolder);
+        this.allowedExtentions = allowedExtentions;
     }
 
     @Override
@@ -41,14 +44,24 @@ public class ClientHandler implements Runnable {
                         socket.close();
                     else
                         socketOut.println("ERR SYNTAX");
-                    socketOut.flush();
                 } else {
 
                     switch (input.split(" ")[0]) {
                         case "LEGGI":
-                            
-                            socketOut.println(readFile(input.split(" ")[1]));
-                            
+                            if(input.split(" ")[1].contains(".")) {
+                                socketOut.println("ERR SYNTAX");
+                                break;
+                            }                            
+
+                            String fileName = findFile(input.split(" ")[1]);
+
+                            if(fileName.equals("ERR NOTFOUND")) {
+                                socketOut.println(fileName);
+                                break;
+                            }
+
+                            socketOut.println(readFile(fileName));
+                        
                             break;
                     
                         default:
@@ -65,18 +78,34 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    private String findFile(String input) {
+        for (String extention: allowedExtentions.keySet()) {
+            File file = new File(fileFolder, (input + "." + extention) );
+
+            if(file.exists())
+                return input + "." + extention;
+        }
+
+        return "ERR NOTFOUND";
+    }
 
     private String readFile(String fileName) {
+
+        System.err.println(fileName);
+        String[] fileNameParts = fileName.split("\\.");
+
+        System.err.println(fileNameParts.length);
+        
         File file = new File(fileFolder, fileName);
 
-        if(!file.exists())
-            return "ERR NOTFOUND";
+
+        String result = "OK FILE \nContent-Type: " + allowedExtentions.get(fileNameParts[fileNameParts.length - 1]) + "\n\n";
 
         try (
             BufferedReader fileReader = new BufferedReader(new FileReader(file));
         ) {
             String line = fileReader.readLine();
-            String result = "OK FILE\n\n";
+            
 
             while (line != null) {
                 result += line + "\n";
@@ -84,12 +113,11 @@ public class ClientHandler implements Runnable {
                 line = fileReader.readLine();
             }
 
-            return result;
         } catch(IOException e) {
             e.printStackTrace();
         }
 
-        return "ERR HOW DID WE GET HERE?";
+        return result;
 
     }
 }
